@@ -13,7 +13,7 @@ func cleanInput(text string) []string {
 	return words
 }
 
-func startRepl() {
+func startRepl(cfg *config) error {
 	availableCmds := getCommands()
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -30,6 +30,9 @@ func startRepl() {
 			fmt.Println("invalid command")
 			continue
 		}
-		command.callback()
+		err := command.callback(cfg)
+		if err != nil {
+			return err
+		}
 	}
 }

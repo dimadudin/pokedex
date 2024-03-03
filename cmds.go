@@ -1,17 +1,15 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config) error
 }
 
 func getCommands() map[string]cliCommand {
@@ -39,7 +37,7 @@ func getCommands() map[string]cliCommand {
 	}
 }
 
-func cmdHelp() error {
+func cmdHelp(cfg *config) error {
 	fmt.Println("")
 	fmt.Println("Usage: <command>")
 	fmt.Println("All commands:")
@@ -51,44 +49,38 @@ func cmdHelp() error {
 	return nil
 }
 
-func cmdExit() error {
+func cmdExit(cfg *config) error {
 	os.Exit(0)
 	return nil
 }
 
-type mapResponse struct {
-	Next     string
-	Previous string
-	Results  []struct {
-		Name string
+func cmdMap(cfg *config) error {
+	resp, err := cfg.pokeapiClient.ListLocationAreas(cfg.nextLocationURL)
+	if err != nil {
+		return err
 	}
-}
-
-func cmdMap() error {
-	res, reqErr := http.Get("https://pokeapi.co/api/v2/location-area/")
-	if reqErr != nil {
-		return reqErr
-	}
-	text, readErr := io.ReadAll(res.Body)
-	res.Body.Close()
-	if readErr != nil {
-		return readErr
-	}
-	if res.StatusCode > 299 {
-		return fmt.Errorf("response failed with status code %d", res.StatusCode)
-	}
-	resp := mapResponse{}
-	jsonErr := json.Unmarshal(text, &resp)
-	if jsonErr != nil {
-		return jsonErr
-	}
-	locations := resp.Results
-	for _, loc := range locations {
+	fmt.Println("Location areas:")
+	for _, loc := range resp.Results {
 		fmt.Println(loc.Name)
 	}
+	cfg.nextLocationURL = resp.Next
+	cfg.previousLocationURL = resp.Previous
 	return nil
 }
 
-func cmdMapBack() error {
+func cmdMapBack(cfg *config) error {
+	if cfg.previousLocationURL == nil {
+		return errors.New("can't go back, you're on the first page")
+	}
+	resp, err := cfg.pokeapiClient.ListLocationAreas(cfg.previousLocationURL)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Location areas:")
+	for _, loc := range resp.Results {
+		fmt.Println(loc.Name)
+	}
+	cfg.nextLocationURL = resp.Next
+	cfg.previousLocationURL = resp.Previous
 	return nil
 }
