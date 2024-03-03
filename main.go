@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/dimadudin/pokedex/internal/pokeapi"
 )
@@ -14,7 +15,7 @@ type config struct {
 
 func main() {
 	cfg := config{
-		pokeapiClient: pokeapi.NewClient(),
+		pokeapiClient: pokeapi.NewClient(10 * time.Second),
 	}
 	err := startRepl(&cfg)
 	if err != nil {
