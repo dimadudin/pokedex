@@ -15,7 +15,7 @@ type config struct {
 
 func main() {
 	cfg := config{
-		pokeapiClient: pokeapi.NewClient(10 * time.Second),
+		pokeapiClient: pokeapi.NewClient(30*time.Minute, 5*time.Minute),
 	}
 	err := startRepl(&cfg)
 	if err != nil {
