@@ -30,9 +30,9 @@ func startRepl(cfg *config) error {
 			fmt.Println("invalid command")
 			continue
 		}
-		err := command.callback(cfg)
+		err := command.callback(cfg, cleaned[1:]...)
 		if err != nil {
-			return err
+			fmt.Println(err)
 		}
 	}
 }

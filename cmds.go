@@ -9,7 +9,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, ...string) error
 }
 
 func getCommands() map[string]cliCommand {
@@ -34,10 +34,15 @@ func getCommands() map[string]cliCommand {
 			description: "Displays 20 previous locations",
 			callback:    cmdMapBack,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Takes an area name as argument, displays all pokemon found in area",
+			callback:    cmdExplore,
+		},
 	}
 }
 
-func cmdHelp(cfg *config) error {
+func cmdHelp(cfg *config, args ...string) error {
 	fmt.Println("")
 	fmt.Println("Usage: <command>")
 	fmt.Println("All commands:")
@@ -49,26 +54,26 @@ func cmdHelp(cfg *config) error {
 	return nil
 }
 
-func cmdExit(cfg *config) error {
+func cmdExit(cfg *config, args ...string) error {
 	os.Exit(0)
 	return nil
 }
 
-func cmdMap(cfg *config) error {
+func cmdMap(cfg *config, args ...string) error {
 	resp, err := cfg.pokeapiClient.ListLocationAreas(cfg.nextLocationURL)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Location areas:")
 	for _, loc := range resp.Results {
-		fmt.Println(loc.Name)
+		fmt.Printf(" - %s\n", loc.Name)
 	}
 	cfg.nextLocationURL = resp.Next
 	cfg.previousLocationURL = resp.Previous
 	return nil
 }
 
-func cmdMapBack(cfg *config) error {
+func cmdMapBack(cfg *config, args ...string) error {
 	if cfg.previousLocationURL == nil {
 		return errors.New("can't go back, you're on the first page")
 	}
@@ -78,9 +83,29 @@ func cmdMapBack(cfg *config) error {
 	}
 	fmt.Println("Location areas:")
 	for _, loc := range resp.Results {
-		fmt.Println(loc.Name)
+		fmt.Printf(" - %s\n", loc.Name)
 	}
 	cfg.nextLocationURL = resp.Next
 	cfg.previousLocationURL = resp.Previous
+	return nil
+}
+
+func cmdExplore(cfg *config, args ...string) error {
+	if len(args) < 1 {
+		return errors.New("not enough arguments")
+	}
+	if len(args) > 1 {
+		return errors.New("too many arguments")
+	}
+	locName := args[0]
+	resp, err := cfg.pokeapiClient.ListPokemonInArea(locName)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Exploring %s...\n", locName)
+	fmt.Println("Found pokemon:")
+	for _, encounter := range resp.PokemonEncounters {
+		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
+	}
 	return nil
 }
