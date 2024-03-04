@@ -1,6 +1,6 @@
 package pokeapi
 
-type locationAreasResponse struct {
+type areaList struct {
 	Count    int     `json:"count"`
 	Next     *string `json:"next"`
 	Previous *string `json:"previous"`
@@ -10,8 +10,8 @@ type locationAreasResponse struct {
 	} `json:"results"`
 }
 
-func (c *Client) ListLocationAreas(pageURL *string) (locationAreasResponse, error) {
-	var resp locationAreasResponse
+func (c *Client) ListAreas(pageURL *string) (areaList, error) {
+	var resp areaList
 	endpoint := "/location-area"
 	fullURL := baseURL + endpoint
 	if pageURL != nil {
@@ -21,7 +21,7 @@ func (c *Client) ListLocationAreas(pageURL *string) (locationAreasResponse, erro
 	if err != nil {
 		return resp, err
 	}
-	resp, err = unmarshalTo[locationAreasResponse](dat)
+	resp, err = unmarshalTo[areaList](dat)
 	if err != nil {
 		return resp, err
 	}

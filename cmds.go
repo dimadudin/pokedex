@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 )
 
@@ -39,10 +40,18 @@ func getCommands() map[string]cliCommand {
 			description: "Takes an area name as argument, displays all pokemon found in area",
 			callback:    cmdExplore,
 		},
+		"catch": {
+			name:        "catch",
+			description: "Takes the pokemon name as argument, attempts to catch the pokemon",
+			callback:    cmdCatch,
+		},
 	}
 }
 
 func cmdHelp(cfg *config, args ...string) error {
+	if len(args) > 0 {
+		return errors.New("too many arguments")
+	}
 	fmt.Println("")
 	fmt.Println("Usage: <command>")
 	fmt.Println("All commands:")
@@ -55,12 +64,18 @@ func cmdHelp(cfg *config, args ...string) error {
 }
 
 func cmdExit(cfg *config, args ...string) error {
+	if len(args) > 0 {
+		return errors.New("too many arguments")
+	}
 	os.Exit(0)
 	return nil
 }
 
 func cmdMap(cfg *config, args ...string) error {
-	resp, err := cfg.pokeapiClient.ListLocationAreas(cfg.nextLocationURL)
+	if len(args) > 0 {
+		return errors.New("too many arguments")
+	}
+	resp, err := cfg.pokeapiClient.ListAreas(cfg.nextLocationURL)
 	if err != nil {
 		return err
 	}
@@ -74,19 +89,22 @@ func cmdMap(cfg *config, args ...string) error {
 }
 
 func cmdMapBack(cfg *config, args ...string) error {
+	if len(args) > 0 {
+		return errors.New("too many arguments")
+	}
 	if cfg.previousLocationURL == nil {
 		return errors.New("can't go back, you're on the first page")
 	}
-	resp, err := cfg.pokeapiClient.ListLocationAreas(cfg.previousLocationURL)
+	areaList, err := cfg.pokeapiClient.ListAreas(cfg.previousLocationURL)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Location areas:")
-	for _, loc := range resp.Results {
+	for _, loc := range areaList.Results {
 		fmt.Printf(" - %s\n", loc.Name)
 	}
-	cfg.nextLocationURL = resp.Next
-	cfg.previousLocationURL = resp.Previous
+	cfg.nextLocationURL = areaList.Next
+	cfg.previousLocationURL = areaList.Previous
 	return nil
 }
 
@@ -98,14 +116,39 @@ func cmdExplore(cfg *config, args ...string) error {
 		return errors.New("too many arguments")
 	}
 	locName := args[0]
-	resp, err := cfg.pokeapiClient.ListPokemonInArea(locName)
+	area, err := cfg.pokeapiClient.GetArea(locName)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Exploring %s...\n", locName)
 	fmt.Println("Found pokemon:")
-	for _, encounter := range resp.PokemonEncounters {
+	for _, encounter := range area.PokemonEncounters {
 		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
+	}
+	return nil
+}
+
+func cmdCatch(cfg *config, args ...string) error {
+	if len(args) < 1 {
+		return errors.New("not enough arguments")
+	}
+	if len(args) > 1 {
+		return errors.New("too many arguments")
+	}
+	pokemonName := args[0]
+	pokemon, err := cfg.pokeapiClient.GetPokemon(pokemonName)
+	if err != nil {
+		return err
+	}
+	exp := pokemon.BaseExperience
+	fmt.Printf("Throwing pokeball at %s with exp %d\n", pokemonName, exp)
+	threshold := 50
+	roll := rand.Intn(exp)
+	if roll > threshold {
+		cfg.caughtPokemon[pokemonName] = pokemon
+		fmt.Printf("%s was caught!\n", pokemonName)
+	} else {
+		fmt.Printf("%s escaped!\n", pokemonName)
 	}
 	return nil
 }

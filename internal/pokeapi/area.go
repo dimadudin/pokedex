@@ -1,6 +1,6 @@
 package pokeapi
 
-type areaResponse struct {
+type area struct {
 	EncounterMethodRates []struct {
 		EncounterMethod struct {
 			Name string `json:"name"`
@@ -53,15 +53,15 @@ type areaResponse struct {
 	} `json:"pokemon_encounters"`
 }
 
-func (c *Client) ListPokemonInArea(area string) (areaResponse, error) {
-	var resp areaResponse
-	endpoint := "/location-area/" + area
+func (c *Client) GetArea(areaName string) (area, error) {
+	var resp area
+	endpoint := "/location-area/" + areaName
 	fullURL := baseURL + endpoint
 	dat, err := c.get(fullURL)
 	if err != nil {
 		return resp, err
 	}
-	resp, err = unmarshalTo[areaResponse](dat)
+	resp, err = unmarshalTo[area](dat)
 	if err != nil {
 		return resp, err
 	}
