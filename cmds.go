@@ -50,6 +50,11 @@ func getCommands() map[string]cliCommand {
 			description: "Takes the pokemon name as argument, displays all stats if the pokemon was caught",
 			callback:    cmdInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Displays a list of all caught pokemon",
+			callback:    cmdPokedex,
+		},
 	}
 }
 
@@ -180,6 +185,17 @@ func cmdInspect(cfg *config, args ...string) error {
 	fmt.Println("Types:")
 	for _, t := range pokemon.Types {
 		fmt.Printf(" -%s\n", t.Type.Name)
+	}
+	return nil
+}
+
+func cmdPokedex(cfg *config, args ...string) error {
+	if len(args) > 0 {
+		return errors.New("too many arguments")
+	}
+	fmt.Println("Your pokedex:")
+	for name := range cfg.caughtPokemon {
+		fmt.Printf(" - %s\n", name)
 	}
 	return nil
 }
